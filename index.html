@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Notifications</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text: #262626;
+      --text-secondary: #8e8e8e;
+      --text-muted: #a8a8a8;
+      --bg: #ffffff;
+      --border: #dbdbdb;
+      --surface: #fafafa;
+      --gradient: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
+      --gradient-soft: linear-gradient(135deg, #833ab4 0%, #e1306c 50%, #f77737 100%);
+      --toggle-off: #dbdbdb;
+      --phone-radius: 44px;
+      --screen-radius: 38px;
+    }
+
+    html, body {
+      height: 100%;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Phone frame ── */
+    .phone {
+      width: 375px;
+      height: 812px;
+      background: #000;
+      border-radius: var(--phone-radius);
+      padding: 10px;
+      box-shadow:
+        0 0 0 2px #333,
+        0 24px 80px rgba(0,0,0,0.6),
+        inset 0 0 0 1px rgba(255,255,255,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 28px;
+      background: #000;
+      border-radius: 0 0 18px 18px;
+      z-index: 100;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: var(--screen-radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 44px;
+      padding: 12px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .status-bar .time {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .status-bar .icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-bar .icons svg {
+      display: block;
+    }
+
+    /* ── Scrollable content ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 32px;
+    }
+
+    .content::-webkit-scrollbar { display: none; }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 4px 16px 12px;
+      position: relative;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 17px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 4px 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+
+    .back-btn:active { opacity: 0.5; }
+
+    .back-btn svg {
+      width: 10px;
+      height: 16px;
+      margin-right: 2px;
+    }
+
+    .header-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Hero presets ── */
+    .hero {
+      padding: 8px 16px 20px;
+    }
+
+    .preset-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .preset-card {
+      flex: 1;
+      background: var(--surface);
+      border: 2px solid transparent;
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.25s ease, background 0.25s ease;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .preset-card:active {
+      transform: scale(0.94);
+    }
+
+    .preset-card.selected {
+      background: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 16px rgba(131, 58, 180, 0.18);
+      position: relative;
+    }
+
+    .preset-card.selected::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 16px;
+      padding: 2px;
+      background: var(--gradient);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .preset-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .preset-card.selected .preset-label {
+      background: var(--gradient-soft);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .preset-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    /* ── Section ── */
+    .section {
+      padding: 0 16px;
+      margin-bottom: 8px;
+    }
+
+    .section-header {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 20px 0 12px;
+    }
+
+    .sub-header {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .category-segmented {
+      margin-top: 20px;
+    }
+
+    .category-segmented .segment-btn {
+      font-size: 12px;
+      padding: 9px 4px;
+      line-height: 1.2;
+    }
+
+    .category-panel {
+      margin-top: 8px;
+      transition: opacity 0.22s ease;
+    }
+
+    .category-panel.hidden {
+      display: none;
+    }
+
+    /* ── Subordinate audience segmented (nested under category) ── */
+    .sub-segment-wrap {
+      margin: 10px 0 2px;
+      padding-left: 14px;
+      border-left: 2px solid #efefef;
+    }
+
+    .sub-segment-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .sub-segmented {
+      background: transparent;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 2px;
+      margin-bottom: 0;
+    }
+
+    .sub-segmented .segmented-indicator {
+      background: #f3f3f3;
+      border-radius: 6px;
+      box-shadow: none;
+      top: 2px;
+      left: 2px;
+      width: calc(50% - 2px);
+      height: calc(100% - 4px);
+    }
+
+    .sub-segmented .segment-btn {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 0;
+      color: var(--text-muted);
+    }
+
+    .sub-segmented .segment-btn.active {
+      color: var(--text);
+    }
+
+    .sub-segmented .segment-btn.active .segment-label {
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      -webkit-text-fill-color: var(--text);
+      color: var(--text);
+    }
+
+    /* ── Smart features (global, never context-dependent) ── */
+    .smart-features-section {
+      border-top: 0.5px solid var(--border);
+      margin-top: 16px;
+      padding-top: 4px;
+    }
+
+    .smart-features-section .section-header {
+      padding-top: 16px;
+    }
+
+    /* ── Segmented control ── */
+    .segmented {
+      display: flex;
+      background: #efefef;
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 4px;
+      position: relative;
+    }
+
+    .segmented-indicator {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: calc(50% - 3px);
+      height: calc(100% - 6px);
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .segmented-indicator.right {
+      transform: translateX(100%);
+    }
+
+    .segment-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 8px 0;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      transition: color 0.25s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .segment-btn:active { opacity: 0.7; }
+
+    .segment-btn.active {
+      color: var(--text);
+    }
+
+    .segment-btn.active .segment-label {
+      background: var(--gradient-soft);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Toggle rows ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-info {
+      flex: 1;
+      padding-right: 16px;
+    }
+
+    .toggle-label {
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .toggle-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .toggle-value {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ── Toggle switch ── */
+    .toggle-switch {
+      width: 51px;
+      height: 31px;
+      border-radius: 16px;
+      background: var(--toggle-off);
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: background 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .toggle-switch:active .toggle-knob {
+      width: 28px;
+    }
+
+    .toggle-switch.on {
+      background: var(--gradient);
+    }
+
+    .toggle-knob {
+      display: block;
+      width: 27px;
+      height: 27px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.15s ease;
+      transform: translateX(0);
+    }
+
+    .toggle-switch.on .toggle-knob {
+      transform: translateX(20px);
+    }
+
+    /* ── Placeholder row (priority contacts) ── */
+    .placeholder-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 0.5px solid var(--border);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .placeholder-row:active { opacity: 0.6; }
+
+    .chevron-right {
+      width: 8px;
+      height: 14px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .placeholder-avatars {
+      display: flex;
+      align-items: center;
+    }
+
+    .avatar-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      margin-left: -8px;
+      background: var(--gradient);
+      opacity: 0.7;
+    }
+
+    .avatar-dot:first-child { margin-left: 0; }
+
+    .avatar-dot:nth-child(2) {
+      background: linear-gradient(135deg, #405de6, #5851db);
+    }
+
+    .avatar-dot:nth-child(3) {
+      background: linear-gradient(135deg, #fd1d1d, #fcb045);
+    }
+
+    .avatar-count {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-left: 6px;
+    }
+
+    /* ── Home indicator ── */
+    .home-indicator {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .home-indicator::after {
+      content: '';
+      width: 134px;
+      height: 5px;
+      background: var(--text);
+      border-radius: 3px;
+      opacity: 0.18;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+          <rect x="0" y="7" width="3" height="5" rx="0.5" fill="#262626"/>
+          <rect x="4.5" y="5" width="3" height="7" rx="0.5" fill="#262626"/>
+          <rect x="9" y="2.5" width="3" height="9.5" rx="0.5" fill="#262626"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5" fill="#262626"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 2.4C10.4 2.4 12.5 3.4 14 5L15.5 3.5C13.6 1.3 10.9 0 8 0C5.1 0 2.4 1.3 0.5 3.5L2 5C3.5 3.4 5.6 2.4 8 2.4Z" fill="#262626"/>
+          <path d="M8 6.4C9.6 6.4 11 7.1 12 8.3L13.5 6.8C12 5.2 10.1 4.3 8 4.3C5.9 4.3 4 5.2 2.5 6.8L4 8.3C5 7.1 6.4 6.4 8 6.4Z" fill="#262626"/>
+          <circle cx="8" cy="11" r="1.5" fill="#262626"/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13" fill="none">
+          <rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="#262626" stroke-opacity="0.35"/>
+          <rect x="2" y="2" width="17" height="9" rx="2" fill="#262626"/>
+          <path d="M24 4.5V8.5C25 8 25.5 7 25.5 6.5C25.5 6 25 5 24 4.5Z" fill="#262626" fill-opacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Header -->
+      <div class="header">
+        <button class="back-btn" aria-label="Back to Settings">
+          <svg viewBox="0 0 10 16" fill="none"><path d="M9 1L2 8L9 15" stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Settings
+        </button>
+        <span class="header-title">Notifications</span>
+      </div>
+
+      <!-- Hero presets -->
+      <div class="hero">
+        <div class="preset-row" id="presetRow">
+          <div class="preset-card" data-preset="all">
+            <div class="preset-label">I Want It All</div>
+            <div class="preset-desc">Every ping, every time</div>
+          </div>
+          <div class="preset-card selected" data-preset="relevant">
+            <div class="preset-label">Keep Me Relevant</div>
+            <div class="preset-desc">What matters, nothing more</div>
+          </div>
+          <div class="preset-card" data-preset="quiet">
+            <div class="preset-label">Don't Bug Me</div>
+            <div class="preset-desc">Only the essentials</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification types -->
+      <div class="section">
+        <div class="segmented category-segmented" id="categorySegmented">
+          <div class="segmented-indicator" id="categoryIndicator"></div>
+          <button class="segment-btn active" data-category="aboutYou">
+            <span class="segment-label">It's About You</span>
+          </button>
+          <button class="segment-btn" data-category="notAboutYou">
+            <span class="segment-label">It's Not About You</span>
+          </button>
+        </div>
+
+        <div class="category-panel" id="aboutYouPanel">
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">New follower request</div></div>
+            <button class="toggle-switch on" data-group="aboutYou" data-key="newFollower" aria-label="New follower request"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">Friend request</div></div>
+            <button class="toggle-switch on" data-group="aboutYou" data-key="friendRequest" aria-label="Friend request"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">Direct message</div></div>
+            <button class="toggle-switch on" data-group="aboutYou" data-key="directMessage" aria-label="Direct message"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">Friend tagged me</div></div>
+            <button class="toggle-switch on" data-group="aboutYou" data-key="friendTagged" aria-label="Friend tagged me"></button>
+          </div>
+        </div>
+
+        <div class="category-panel hidden" id="notAboutYouPanel">
+          <div class="sub-segment-wrap">
+            <div class="sub-segment-label">From</div>
+            <div class="segmented sub-segmented" id="audienceSegmented">
+              <div class="segmented-indicator" id="audienceIndicator"></div>
+              <button class="segment-btn active" data-audience="closeFriends">
+                <span class="segment-label">Close Friends</span>
+              </button>
+              <button class="segment-btn" data-audience="everyoneElse">
+                <span class="segment-label">Everyone Else</span>
+              </button>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">Friend went live</div></div>
+            <button class="toggle-switch on" data-group="notAboutYou" data-key="friendLive" aria-label="Friend went live"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><div class="toggle-label">Friend posted</div></div>
+            <button class="toggle-switch" data-group="notAboutYou" data-key="friendPosted" aria-label="Friend posted"></button>
+          </div>
+        </div>
+
+        <!-- Smart features — global, unchanged by category/audience tabs or presets -->
+        <div class="smart-features-section">
+          <div class="section-header">Smart features</div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Quiet hours</div>
+              <div class="toggle-value">10pm – 7am</div>
+            </div>
+            <button class="toggle-switch on" id="quietHours" aria-label="Quiet hours"></button>
+          </div>
+
+          <div class="placeholder-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Priority contacts</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="placeholder-avatars">
+                <div class="avatar-dot"></div>
+                <div class="avatar-dot"></div>
+                <div class="avatar-dot"></div>
+              </div>
+              <span class="avatar-count">12</span>
+              <svg class="chevron-right" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Daily digest</div>
+              <div class="toggle-subtitle">Bundle non-close-friends activity into one daily summary</div>
+            </div>
+            <button class="toggle-switch on" id="dailyDigest" aria-label="Daily digest"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PRESETS = {
+    all: {
+      aboutYou: { newFollower: true, friendRequest: true, directMessage: true, friendTagged: true },
+      notAboutYou: {
+        closeFriends: { friendLive: true, friendPosted: true },
+        everyoneElse: { friendLive: true, friendPosted: true }
+      }
+    },
+    relevant: {
+      aboutYou: { newFollower: true, friendRequest: true, directMessage: true, friendTagged: true },
+      notAboutYou: {
+        closeFriends: { friendLive: true, friendPosted: false },
+        everyoneElse: { friendLive: false, friendPosted: false }
+      }
+    },
+    quiet: {
+      aboutYou: { newFollower: false, friendRequest: true, directMessage: true, friendTagged: true },
+      notAboutYou: {
+        closeFriends: { friendLive: false, friendPosted: false },
+        everyoneElse: { friendLive: false, friendPosted: false }
+      }
+    }
+  };
+
+  let currentCategory = 'aboutYou';
+  let currentAudience = 'closeFriends';
+  let activePreset = 'relevant';
+  let userModified = false;
+
+  const state = JSON.parse(JSON.stringify({
+    aboutYou: PRESETS.relevant.aboutYou,
+    notAboutYou: PRESETS.relevant.notAboutYou,
+    smartFeatures: { quietHours: true, dailyDigest: true }
+  }));
+
+  const categoryIndicator = document.getElementById('categoryIndicator');
+  const audienceIndicator = document.getElementById('audienceIndicator');
+  const aboutYouPanel = document.getElementById('aboutYouPanel');
+  const notAboutYouPanel = document.getElementById('notAboutYouPanel');
+
+  document.querySelectorAll('.toggle-switch').forEach(function (el) {
+    var knob = document.createElement('span');
+    knob.className = 'toggle-knob';
+    el.appendChild(knob);
+  });
+
+  function renderAboutYou() {
+    document.querySelectorAll('[data-group="aboutYou"]').forEach(function (toggle) {
+      toggle.classList.toggle('on', !!state.aboutYou[toggle.dataset.key]);
+    });
+  }
+
+  function renderNotAboutYou() {
+    var audienceState = state.notAboutYou[currentAudience];
+    document.querySelectorAll('[data-group="notAboutYou"]').forEach(function (toggle) {
+      toggle.classList.toggle('on', !!audienceState[toggle.dataset.key]);
+    });
+  }
+
+  function renderCategoryPanels() {
+    aboutYouPanel.classList.toggle('hidden', currentCategory !== 'aboutYou');
+    notAboutYouPanel.classList.toggle('hidden', currentCategory !== 'notAboutYou');
+  }
+
+  function renderSmartFeatures() {
+    document.getElementById('quietHours').classList.toggle('on', state.smartFeatures.quietHours);
+    document.getElementById('dailyDigest').classList.toggle('on', state.smartFeatures.dailyDigest);
+  }
+
+  function renderAll() {
+    renderAboutYou();
+    renderNotAboutYou();
+    renderCategoryPanels();
+    renderSmartFeatures();
+  }
+
+  function applyPreset(presetId) {
+    activePreset = presetId;
+    userModified = false;
+    var preset = PRESETS[presetId];
+    state.aboutYou = JSON.parse(JSON.stringify(preset.aboutYou));
+    state.notAboutYou = JSON.parse(JSON.stringify(preset.notAboutYou));
+    renderAboutYou();
+    renderNotAboutYou();
+    renderCategoryPanels();
+  }
+
+  function updatePresetHighlight() {
+    document.querySelectorAll('.preset-card').forEach(function (card) {
+      card.classList.toggle('selected', card.dataset.preset === activePreset && !userModified);
+    });
+  }
+
+  function clearPresetHighlight() {
+    userModified = true;
+    document.querySelectorAll('.preset-card').forEach(function (card) {
+      card.classList.remove('selected');
+    });
+  }
+
+  document.getElementById('presetRow').addEventListener('click', function (e) {
+    var card = e.target.closest('.preset-card');
+    if (!card) return;
+    applyPreset(card.dataset.preset);
+    updatePresetHighlight();
+  });
+
+  document.getElementById('categorySegmented').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-category]');
+    if (!btn || btn.dataset.category === currentCategory) return;
+    currentCategory = btn.dataset.category;
+    document.querySelectorAll('#categorySegmented .segment-btn').forEach(function (b) {
+      b.classList.toggle('active', b === btn);
+    });
+    categoryIndicator.classList.toggle('right', currentCategory === 'notAboutYou');
+    renderCategoryPanels();
+  });
+
+  document.getElementById('audienceSegmented').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-audience]');
+    if (!btn || btn.dataset.audience === currentAudience) return;
+    currentAudience = btn.dataset.audience;
+    document.querySelectorAll('#audienceSegmented .segment-btn').forEach(function (b) {
+      b.classList.toggle('active', b === btn);
+    });
+    audienceIndicator.classList.toggle('right', currentAudience === 'everyoneElse');
+    renderNotAboutYou();
+  });
+
+  document.querySelectorAll('[data-group="aboutYou"]').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var key = toggle.dataset.key;
+      state.aboutYou[key] = !state.aboutYou[key];
+      toggle.classList.toggle('on', state.aboutYou[key]);
+      clearPresetHighlight();
+    });
+  });
+
+  document.querySelectorAll('[data-group="notAboutYou"]').forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+      var key = toggle.dataset.key;
+      state.notAboutYou[currentAudience][key] = !state.notAboutYou[currentAudience][key];
+      toggle.classList.toggle('on', state.notAboutYou[currentAudience][key]);
+      clearPresetHighlight();
+    });
+  });
+
+  document.getElementById('quietHours').addEventListener('click', function () {
+    state.smartFeatures.quietHours = !state.smartFeatures.quietHours;
+    this.classList.toggle('on', state.smartFeatures.quietHours);
+  });
+
+  document.getElementById('dailyDigest').addEventListener('click', function () {
+    state.smartFeatures.dailyDigest = !state.smartFeatures.dailyDigest;
+    this.classList.toggle('on', state.smartFeatures.dailyDigest);
+  });
+
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
