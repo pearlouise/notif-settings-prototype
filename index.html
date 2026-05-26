@@ -265,9 +265,20 @@
 
     /* ── Subordinate audience segmented (nested under category) ── */
     .sub-segment-wrap {
-      margin: 10px 0 2px;
+      margin: 10px 0 4px;
       padding-left: 14px;
       border-left: 2px solid #efefef;
+      overflow: hidden;
+      max-height: 80px;
+      opacity: 1;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.3s ease;
+    }
+
+    .sub-segment-wrap.hidden {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      pointer-events: none;
     }
 
     .sub-segment-label {
@@ -595,6 +606,19 @@
           </button>
         </div>
 
+        <div class="sub-segment-wrap hidden" id="audienceSubWrap">
+          <div class="sub-segment-label">From</div>
+          <div class="segmented sub-segmented" id="audienceSegmented">
+            <div class="segmented-indicator" id="audienceIndicator"></div>
+            <button class="segment-btn active" data-audience="closeFriends">
+              <span class="segment-label">Close Friends</span>
+            </button>
+            <button class="segment-btn" data-audience="everyoneElse">
+              <span class="segment-label">Everyone Else</span>
+            </button>
+          </div>
+        </div>
+
         <div class="category-panel" id="aboutYouPanel">
           <div class="toggle-row">
             <div class="toggle-info"><div class="toggle-label">New follower request</div></div>
@@ -615,18 +639,6 @@
         </div>
 
         <div class="category-panel hidden" id="notAboutYouPanel">
-          <div class="sub-segment-wrap">
-            <div class="sub-segment-label">From</div>
-            <div class="segmented sub-segmented" id="audienceSegmented">
-              <div class="segmented-indicator" id="audienceIndicator"></div>
-              <button class="segment-btn active" data-audience="closeFriends">
-                <span class="segment-label">Close Friends</span>
-              </button>
-              <button class="segment-btn" data-audience="everyoneElse">
-                <span class="segment-label">Everyone Else</span>
-              </button>
-            </div>
-          </div>
           <div class="toggle-row">
             <div class="toggle-info"><div class="toggle-label">Friend went live</div></div>
             <button class="toggle-switch on" data-group="notAboutYou" data-key="friendLive" aria-label="Friend went live"></button>
@@ -718,6 +730,7 @@
 
   const categoryIndicator = document.getElementById('categoryIndicator');
   const audienceIndicator = document.getElementById('audienceIndicator');
+  const audienceSubWrap = document.getElementById('audienceSubWrap');
   const aboutYouPanel = document.getElementById('aboutYouPanel');
   const notAboutYouPanel = document.getElementById('notAboutYouPanel');
 
@@ -743,6 +756,7 @@
   function renderCategoryPanels() {
     aboutYouPanel.classList.toggle('hidden', currentCategory !== 'aboutYou');
     notAboutYouPanel.classList.toggle('hidden', currentCategory !== 'notAboutYou');
+    audienceSubWrap.classList.toggle('hidden', currentCategory !== 'notAboutYou');
   }
 
   function renderSmartFeatures() {
