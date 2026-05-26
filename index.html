@@ -292,39 +292,46 @@
 
     .sub-segmented {
       background: transparent;
-      border: 1px solid #e8e8e8;
-      border-radius: 8px;
-      padding: 2px;
+      border: none;
+      border-radius: 0;
+      padding: 0;
       margin-bottom: 0;
+      gap: 8px;
     }
 
     .sub-segmented .segmented-indicator {
-      background: #f3f3f3;
-      border-radius: 6px;
-      box-shadow: none;
-      top: 2px;
-      left: 2px;
-      width: calc(50% - 2px);
-      height: calc(100% - 4px);
+      display: none;
     }
 
     .sub-segmented .segment-btn {
       font-size: 12px;
       font-weight: 500;
-      padding: 7px 0;
-      color: var(--text-muted);
-    }
-
-    .sub-segmented .segment-btn.active {
-      color: var(--text);
+      padding: 8px 0;
+      color: var(--text-secondary);
+      background: #fff;
+      border: 1px solid #dbdbdb;
+      border-radius: 8px;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     }
 
     .sub-segmented .segment-btn.active .segment-label {
       background: none;
       -webkit-background-clip: unset;
       background-clip: unset;
-      -webkit-text-fill-color: var(--text);
-      color: var(--text);
+      -webkit-text-fill-color: inherit;
+      color: inherit;
+    }
+
+    .sub-segmented .segment-btn[data-audience="closeFriends"].active {
+      background: #ed4956;
+      border-color: #ed4956;
+      color: #fff;
+    }
+
+    .sub-segmented .segment-btn[data-audience="everyoneElse"].active {
+      background: #fff;
+      border-color: #dbdbdb;
+      color: var(--text-secondary);
     }
 
     /* ── Smart features (global, never context-dependent) ── */
@@ -609,7 +616,6 @@
         <div class="sub-segment-wrap hidden" id="audienceSubWrap">
           <div class="sub-segment-label">From</div>
           <div class="segmented sub-segmented" id="audienceSegmented">
-            <div class="segmented-indicator" id="audienceIndicator"></div>
             <button class="segment-btn active" data-audience="closeFriends">
               <span class="segment-label">Close Friends</span>
             </button>
@@ -729,7 +735,6 @@
   }));
 
   const categoryIndicator = document.getElementById('categoryIndicator');
-  const audienceIndicator = document.getElementById('audienceIndicator');
   const audienceSubWrap = document.getElementById('audienceSubWrap');
   const aboutYouPanel = document.getElementById('aboutYouPanel');
   const notAboutYouPanel = document.getElementById('notAboutYouPanel');
@@ -820,7 +825,6 @@
     document.querySelectorAll('#audienceSegmented .segment-btn').forEach(function (b) {
       b.classList.toggle('active', b === btn);
     });
-    audienceIndicator.classList.toggle('right', currentAudience === 'everyoneElse');
     renderNotAboutYou();
   });
 
